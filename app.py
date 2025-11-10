@@ -10,6 +10,13 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import normalize
 
+# ✅ This must come before any other st. commands
+st.set_page_config(
+    page_title="🎬 SmartCine",
+    layout="wide",
+    page_icon="🎥",
+)
+
 # ============================
 # 1️⃣ Load Saved Artifacts
 # ============================
@@ -48,14 +55,14 @@ def recommend(movie_name):
     recs = df.loc[[candidates[i] for i in top_idx], ["original_title", "overview", "id"]].reset_index(drop=True)
     return recs, df.loc[idx, "original_title"]
 
-# ============================
-# 3️⃣ Streamlit Page Setup
-# ============================
-st.set_page_config(
-    page_title="🎬 SmartCine",
-    layout="wide",
-    page_icon="🎥",
-)
+# # ============================
+# # 3️⃣ Streamlit Page Setup
+# # ============================
+# st.set_page_config(
+#     page_title="🎬 SmartCine",
+#     layout="wide",
+#     page_icon="🎥",
+# )
 
 # ============================
 # 4️⃣ Cinematic UI Styling
