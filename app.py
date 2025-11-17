@@ -171,7 +171,6 @@ import streamlit as st
 import pickle
 import pandas as pd
 import numpy as np
-import plotly.express as px
 
 # -------------------------------------------------------
 # PAGE CONFIG
@@ -205,30 +204,25 @@ X_reduced = artifacts["X_reduced"]
 
 def recommend(movie_name, n=10):
     movie_name = movie_name.lower()
-
     matches = df[df['original_title'].str.lower().str.contains(movie_name)]
     if matches.empty:
         return None, None
 
     idx = matches.index[0]
-
     movie_cluster = df.loc[idx, "kmeans_cluster_v2"]
 
-    recs = df[df["kmeans_cluster_v2"] == movie_cluster]\
-            .sort_values("popularity", ascending=False)\
+    recs = df[df["kmeans_cluster_v2"] == movie_cluster] \
+            .sort_values("popularity", ascending=False) \
             .head(n)[["original_title", "vote_average", "popularity"]]
 
     return movie_cluster, recs
 
-
 # -------------------------------------------------------
-# MAIN UI NAVIGATION (TABS)
+# 2 MAIN TABS ONLY
 # -------------------------------------------------------
-tab1, tab2, tab3, tab4 = st.tabs(
+tab1, tab2 = st.tabs(
     ["🎥 Movie Name Recommendation",
-     "🎭 Browse by Category",
-     "📊 Cluster Insights",
-     "🌐 3D Visualization"]
+     "🎭 Browse by Category"]
 )
 
 # -------------------------------------------------------
@@ -252,7 +246,6 @@ with tab1:
 
                 st.write("### 🎬 Recommended Movies:")
                 st.dataframe(recs)
-
 
 # -------------------------------------------------------
 # 2️⃣ TAB — CATEGORY-BASED RECOMMENDATION
@@ -283,59 +276,6 @@ with tab2:
         🔥 Popularity: {row['popularity']}
         <hr>
         """, unsafe_allow_html=True)
-
-
-# -------------------------------------------------------
-# 3️⃣ TAB — CLUSTER INSIGHTS
-# -------------------------------------------------------
-with tab3:
-    st.subheader("📊 SmartCine V2 – Cluster Insights")
-
-    # Count Plot
-    cluster_counts = df['kmeans_cluster_v2'].value_counts().sort_index()
-
-    fig1 = px.bar(
-        x=cluster_counts.index,
-        y=cluster_counts.values,
-        title="🎬 Number of Movies per Cluster",
-        labels={'x':'Cluster ID', 'y':'Count'},
-        color=cluster_counts.values,
-        color_continuous_scale="Teal"
-    )
-    st.plotly_chart(fig1, use_container_width=True)
-
-    # Rating Plot
-    cluster_summary = df.groupby("kmeans_cluster_v2")[["vote_average", "popularity", "vote_count"]].mean().reset_index()
-
-    fig2 = px.bar(
-        cluster_summary,
-        x="kmeans_cluster_v2",
-        y="vote_average",
-        title="⭐ Average Ratings by Cluster",
-        color="vote_average",
-        color_continuous_scale="RdBu"
-    )
-    st.plotly_chart(fig2, use_container_width=True)
-
-
-# -------------------------------------------------------
-# 4️⃣ TAB — 3D VISUALIZATION
-# -------------------------------------------------------
-with tab4:
-    st.subheader("🌐 SmartCine V2 – 3D Cluster Visualization")
-
-    pca_df = df[["pca1", "pca2", "pca3", "kmeans_cluster_v2", "original_title"]]
-
-    fig3 = px.scatter_3d(
-        pca_df.sample(frac=1.0, random_state=42),
-        x="pca1", y="pca2", z="pca3",
-        color="kmeans_cluster_v2",
-        hover_name="original_title",
-        title="🎬 3D Movie Clusters"
-    )
-
-    st.plotly_chart(fig3, use_container_width=True)
-
 
 # -------------------------------------------------------
 # FOOTER
