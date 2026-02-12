@@ -98,7 +98,7 @@ def poster_grid(df_rows, cols=4):
                 continue
 
             row = rows[i + j]
-            movie_id = getattr(row, "movie_id", None)
+            movie_id = getattr(row,"id", None)
 
             with col:
                 movie_data = fetch_movie_from_tmdb(movie_id)
@@ -111,7 +111,11 @@ def poster_grid(df_rows, cols=4):
                       st.caption(f"API Error: {movie_data['error']}")
 
                 st.markdown(f"**{row.original_title}**")
-                rating = movie_data["rating"] if movie_data else row.vote_average
+                if movie_data and "rating" in movie_data:
+                    rating = movie_data["rating"]
+                else:
+                    rating = getattr(row, "vote_average", "N/A")
+
                 st.caption(f"⭐ {rating}")
 
 # ---------------------------
