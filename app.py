@@ -35,8 +35,9 @@ artifacts = load_artifacts()
 df = artifacts["df"]
 X_reduced = artifacts["X_reduced"]
 
-st.write("DEBUG CHECK:")
-st.write(df[['original_title','movie_id']].head())
+st.write("ALL COLUMNS:")
+st.write(df.columns)
+
 
 
 # ---------------------------
