@@ -9,13 +9,63 @@ from sklearn.metrics.pairwise import cosine_similarity
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="SmartCine", page_icon="🎬", layout="wide")
 
+# ---------------- CUSTOM CSS ----------------
 st.markdown("""
 <style>
+
 .stApp { background-color: #0e1117; color: white; }
-.movie-title { font-size:18px; font-weight:600; }
-.hero-title { font-size:48px; font-weight:800; margin-bottom:10px; }
-.hero-overview { font-size:18px; color:#ccc; }
+.block-container { padding-top: 1rem; }
+
+.hero-title { font-size:52px; font-weight:800; margin-bottom:10px; }
+.hero-overview { font-size:18px; color:#ccc; max-width:800px; }
 hr { border: 1px solid #333; }
+
+.movie-card {
+    position: relative;
+    transition: transform 0.3s ease;
+}
+
+.movie-card:hover {
+    transform: scale(1.08);
+    z-index: 2;
+}
+
+.overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: 8px;
+}
+
+.movie-card:hover .overlay {
+    opacity: 1;
+}
+
+.play-icon {
+    position: absolute;
+    top: 40%;
+    left: 45%;
+    font-size: 40px;
+    color: white;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.movie-card:hover .play-icon {
+    opacity: 1;
+}
+
+/* Hide default Streamlit button */
+button[kind="secondary"] {
+    background: none !important;
+    border: none !important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -101,16 +151,20 @@ def movie_grid(df_rows, cols=5):
 
             row = rows[i + j]
             movie_id = getattr(row, "id", None)
+            movie = fetch_movie(movie_id)
 
             with col:
-                movie = fetch_movie(movie_id)
-
                 if movie and movie["poster"]:
-                    st.image(movie["poster"], use_column_width=True)
+                    st.markdown(f"""
+                    <div class="movie-card">
+                        <img src="{movie['poster']}" style="width:100%; border-radius:8px;">
+                        <div class="overlay"></div>
+                        <div class="play-icon">▶</div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-                st.markdown(f"<div class='movie-title'>{row.original_title}</div>", unsafe_allow_html=True)
-
-                if st.button("▶", key=f"btn_{movie_id}_{i}_{j}"):
+                # Invisible clickable button
+                if st.button("", key=f"btn_{movie_id}_{i}_{j}"):
                     st.session_state.selected_movie = movie_id
 
 # ---------------- APP UI ----------------
