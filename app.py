@@ -2,75 +2,65 @@ import streamlit as st
 import pickle
 import pandas as pd
 import numpy as np
-import plotly.express as px
-from sklearn.metrics.pairwise import cosine_similarity
 import requests
 import os
+from sklearn.metrics.pairwise import cosine_similarity
 
-# ---------------------------
-# PAGE CONFIG
-# ---------------------------
-st.set_page_config(page_title="🎬 SmartCine V3", page_icon="🎥", layout="wide")
+# ---------------- PAGE CONFIG ----------------
+st.set_page_config(page_title="SmartCine", page_icon="🎬", layout="wide")
 
-# ---------------------------
-# TMDB API (from Streamlit Secrets)
-# ---------------------------
+st.markdown("""
+<style>
+.stApp { background-color: #0e1117; color: white; }
+.movie-title { font-size:18px; font-weight:600; }
+.hero-title { font-size:48px; font-weight:800; margin-bottom:10px; }
+.hero-overview { font-size:18px; color:#ccc; }
+hr { border: 1px solid #333; }
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------- SESSION STATE ----------------
+if "selected_movie" not in st.session_state:
+    st.session_state.selected_movie = None
+
+# ---------------- TMDB ----------------
 api_key = st.secrets["TMDB_API_KEY"]
-TMDB_BASE_URL = "https://api.themoviedb.org/3/movie/"
-TMDB_IMG_BASE = "https://image.tmdb.org/t/p/w500"
+TMDB_BASE = "https://api.themoviedb.org/3/movie/"
+IMG_BASE = "https://image.tmdb.org/t/p/w500"
+BACKDROP_BASE = "https://image.tmdb.org/t/p/original"
 
-# ---------------------------
-# LOAD ARTIFACTS
-# ---------------------------
+# ---------------- LOAD ARTIFACTS ----------------
 @st.cache_data
 def load_artifacts():
     base_path = os.path.dirname(__file__)
     file_path = os.path.join(base_path, "artifacts.pkl")
-
     with open(file_path, "rb") as f:
         return pickle.load(f)
-    
-# Load artifacts into memory
+
 artifacts = load_artifacts()
 df = artifacts["df"]
 X_reduced = artifacts["X_reduced"]
 
-st.write("ALL COLUMNS:")
-st.write(df.columns)
-
-
-
-# ---------------------------
-# TMDB LIVE FETCH
-# ---------------------------
+# ---------------- TMDB FETCH ----------------
 @st.cache_data
-def fetch_movie_from_tmdb(movie_id):
+def fetch_movie(movie_id):
     try:
-        url = f"{TMDB_BASE_URL}{int(movie_id)}?api_key={api_key}&language=en-US"
+        url = f"{TMDB_BASE}{int(movie_id)}?api_key={api_key}&language=en-US"
         res = requests.get(url, timeout=5)
-
-        if res.status_code != 200:
-            return {"error": f"Status Code {res.status_code}"}
-
         data = res.json()
 
-        poster_path = data.get("poster_path")
-        poster_url = TMDB_IMG_BASE + poster_path if poster_path else None
-
         return {
-            "poster": poster_url,
+            "poster": IMG_BASE + data["poster_path"] if data.get("poster_path") else None,
+            "backdrop": BACKDROP_BASE + data["backdrop_path"] if data.get("backdrop_path") else None,
             "overview": data.get("overview", ""),
-            "rating": data.get("vote_average", 0)
+            "rating": data.get("vote_average", 0),
+            "title": data.get("title", "")
         }
+    except:
+        return None
 
-    except Exception as e:
-        return {"error": str(e)}
-
-
-# ---------------------------
-# HYBRID RECOMMENDATION
-# ---------------------------
-def hybrid_recommend(title_query, top_n=10):
+# ---------------- RECOMMENDER ----------------
+def recommend(title_query, top_n=10):
     matches = df[df["original_title"].str.lower().str.contains(title_query.lower())]
     if matches.empty:
         return None, None
@@ -86,10 +76,22 @@ def hybrid_recommend(title_query, top_n=10):
     recs = df_temp.sort_values("score", ascending=False).head(top_n)
     return df.loc[idx], recs
 
-# ---------------------------
-# POSTER GRID
-# ---------------------------
-def poster_grid(df_rows, cols=4):
+# ---------------- HERO BANNER ----------------
+def show_hero(movie_id):
+    movie = fetch_movie(movie_id)
+    if not movie:
+        return
+
+    if movie["backdrop"]:
+        st.image(movie["backdrop"], use_column_width=True)
+
+    st.markdown(f"<div class='hero-title'>{movie['title']}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='hero-overview'>{movie['overview']}</div>", unsafe_allow_html=True)
+    st.markdown(f"⭐ {movie['rating']}")
+    st.markdown("<hr>", unsafe_allow_html=True)
+
+# ---------------- MOVIE GRID ----------------
+def movie_grid(df_rows, cols=5):
     rows = list(df_rows.itertuples())
     for i in range(0, len(rows), cols):
         columns = st.columns(cols)
@@ -98,64 +100,52 @@ def poster_grid(df_rows, cols=4):
                 continue
 
             row = rows[i + j]
-            movie_id = getattr(row,"id", None)
+            movie_id = getattr(row, "id", None)
 
             with col:
-                movie_data = fetch_movie_from_tmdb(movie_id)
+                movie = fetch_movie(movie_id)
 
-                if movie_data and movie_data.get("poster"):
-                    st.image(movie_data["poster"], use_column_width=True)
-                else:
-                    st.write("No Poster")
-                    if movie_data and movie_data.get("error"):
-                      st.caption(f"API Error: {movie_data['error']}")
+                if movie and movie["poster"]:
+                    st.image(movie["poster"], use_column_width=True)
 
-                st.markdown(f"**{row.original_title}**")
-                if movie_data and "rating" in movie_data:
-                    rating = movie_data["rating"]
-                else:
-                    rating = getattr(row, "vote_average", "N/A")
+                st.markdown(f"<div class='movie-title'>{row.original_title}</div>", unsafe_allow_html=True)
 
-                st.caption(f"⭐ {rating}")
+                if st.button("▶", key=f"btn_{movie_id}"):
+                    st.session_state.selected_movie = movie_id
 
-# ---------------------------
-# APP UI
-# ---------------------------
-st.title("🎬 SmartCine V3 — Live TMDB Powered")
+# ---------------- APP UI ----------------
+st.title("🎬 SmartCine — Netflix Style")
 
-tabs = st.tabs(["🏠 Home", "🔎 Recommend", "🔥 Trending"])
+tabs = st.tabs(["🏠 Home", "🔎 Search", "🔥 Trending"])
 
-# ---------------- HOME
+# ---------- HOME ----------
 with tabs[0]:
-    st.header("🔥 Top Popular Movies")
-    top_pop = df.sort_values("popularity", ascending=False).head(8)
-    poster_grid(top_pop)
 
-# ---------------- RECOMMEND
+    if st.session_state.selected_movie:
+        show_hero(st.session_state.selected_movie)
+
+    st.subheader("🔥 Popular Movies")
+    popular = df.sort_values("popularity", ascending=False).head(15)
+    movie_grid(popular)
+
+# ---------- SEARCH ----------
 with tabs[1]:
-    st.header("🔎 Search Movie")
-    movie_input = st.text_input("Type movie name:")
+    movie_input = st.text_input("Search Movie")
 
-    if st.button("Recommend"):
-        if movie_input.strip() == "":
-            st.warning("Enter movie name")
+    if st.button("Search"):
+        seed, recs = recommend(movie_input, top_n=15)
+
+        if seed is None:
+            st.error("Movie not found")
         else:
-            seed, recs = hybrid_recommend(movie_input, top_n=8)
+            st.session_state.selected_movie = seed["id"]
+            show_hero(seed["id"])
+            movie_grid(recs)
 
-            if seed is None:
-                st.error("Movie not found")
-            else:
-                st.subheader("🎯 Based on:")
-                poster_grid(pd.DataFrame([seed]), cols=1)
-
-                st.subheader("🎬 Recommendations:")
-                poster_grid(recs)
-
-# ---------------- TRENDING
+# ---------- TRENDING ----------
 with tabs[2]:
-    st.header("🔥 Trending (Popularity Based)")
-    trending = df.sort_values("popularity", ascending=False).head(12)
-    poster_grid(trending)
+    trending = df.sort_values("vote_average", ascending=False).head(15)
+    movie_grid(trending)
 
 st.markdown("---")
-st.markdown("<center>Built with ❤ — SmartCine V3</center>", unsafe_allow_html=True)
+st.markdown("<center>Built with ❤ — SmartCine</center>", unsafe_allow_html=True)
