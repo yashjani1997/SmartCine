@@ -35,27 +35,36 @@ artifacts = load_artifacts()
 df = artifacts["df"]
 X_reduced = artifacts["X_reduced"]
 
+st.write("DEBUG CHECK:")
+st.write(df[['original_title','movie_id']].head())
+
+
 # ---------------------------
 # TMDB LIVE FETCH
 # ---------------------------
 @st.cache_data
 def fetch_movie_from_tmdb(movie_id):
     try:
-        url = f"{TMDB_BASE_URL}{movie_id}?api_key={api_key}&language=en-US"
+        url = f"{TMDB_BASE_URL}{int(movie_id)}?api_key={api_key}&language=en-US"
         res = requests.get(url, timeout=5)
-        res.raise_for_status()
+
+        if res.status_code != 200:
+            return {"error": f"Status Code {res.status_code}"}
+
         data = res.json()
 
-        poster = data.get("poster_path")
-        poster_url = TMDB_IMG_BASE + poster if poster else None
+        poster_path = data.get("poster_path")
+        poster_url = TMDB_IMG_BASE + poster_path if poster_path else None
 
         return {
             "poster": poster_url,
             "overview": data.get("overview", ""),
             "rating": data.get("vote_average", 0)
         }
-    except:
-        return None
+
+    except Exception as e:
+        return {"error": str(e)}
+
 
 # ---------------------------
 # HYBRID RECOMMENDATION
@@ -93,10 +102,12 @@ def poster_grid(df_rows, cols=4):
             with col:
                 movie_data = fetch_movie_from_tmdb(movie_id)
 
-                if movie_data and movie_data["poster"]:
+                if movie_data and movie_data.get("poster"):
                     st.image(movie_data["poster"], use_column_width=True)
                 else:
                     st.write("No Poster")
+                    if movie_data and movie_data.get("error"):
+                      st.caption(f"API Error: {movie_data['error']}")
 
                 st.markdown(f"**{row.original_title}**")
                 rating = movie_data["rating"] if movie_data else row.vote_average
