@@ -110,7 +110,7 @@ def movie_grid(df_rows, cols=5):
 
                 st.markdown(f"<div class='movie-title'>{row.original_title}</div>", unsafe_allow_html=True)
 
-                if st.button("▶", key=f"btn_{movie_id}"):
+                if st.button("▶", key=f"btn_{movie_id}_{i}_{j}"):
                     st.session_state.selected_movie = movie_id
 
 # ---------------- APP UI ----------------
