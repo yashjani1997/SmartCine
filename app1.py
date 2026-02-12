@@ -22,7 +22,7 @@ TMDB_IMG_BASE = "https://image.tmdb.org/t/p/w500"
 # LOAD ARTIFACTS
 # ---------------------------
 @st.cache_data
-def load_artifacts(path="smartcine_artifacts_v2.pkl"):
+def load_artifacts(path="artifacts.pkl"):
     with open(path, "rb") as f:
         return pickle.load(f)
 
