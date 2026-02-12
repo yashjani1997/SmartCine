@@ -160,12 +160,14 @@ def movie_grid(df_rows, cols=6):
                     st.session_state.selected_movie = movie_id
 
 # ---------------- APP UI ----------------
+# Always show selected movie on top
+if st.session_state.selected_movie:
+    show_hero(st.session_state.selected_movie)
+
 tabs = st.tabs(["🏠 Home", "🔎 Search", "🔥 Trending"])
 
 # HOME
 with tabs[0]:
-    if st.session_state.selected_movie:
-        show_hero(st.session_state.selected_movie)
 
     st.subheader("🔥 Popular")
     popular = df.sort_values("popularity", ascending=False).head(18)
