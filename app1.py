@@ -5,6 +5,7 @@ import numpy as np
 import plotly.express as px
 from sklearn.metrics.pairwise import cosine_similarity
 import requests
+import os
 
 # ---------------------------
 # PAGE CONFIG
@@ -22,10 +23,14 @@ TMDB_IMG_BASE = "https://image.tmdb.org/t/p/w500"
 # LOAD ARTIFACTS
 # ---------------------------
 @st.cache_data
-def load_artifacts(path="artifacts.pkl"):
-    with open(path, "rb") as f:
-        return pickle.load(f)
+def load_artifacts():
+    base_path = os.path.dirname(__file__)
+    file_path = os.path.join(base_path, "artifacts.pkl")
 
+    with open(file_path, "rb") as f:
+        return pickle.load(f)
+    
+# Load artifacts into memory
 artifacts = load_artifacts()
 df = artifacts["df"]
 X_reduced = artifacts["X_reduced"]
