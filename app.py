@@ -178,12 +178,13 @@ with tabs[1]:
     movie_input = st.text_input("Search Movie")
     if st.button("Search"):
         seed, recs = recommend(movie_input, top_n=18)
-        if seed:
+        if seed is not None:
             st.session_state.selected_movie = seed["id"]
             show_hero(seed["id"])
             movie_grid(recs)
         else:
             st.error("Movie not found")
+
 
 # TRENDING
 with tabs[2]:
