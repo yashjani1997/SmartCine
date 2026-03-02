@@ -100,3 +100,6 @@ To transform the ML model into a real-world application with **live data, scalab
 Data Analyst & Machine Learning Enthusiast  
 
 ---
+
+
+Demo :- https://smartcine-yflwioje8c2ggv8lqzemqu.streamlit.app/
