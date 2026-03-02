@@ -111,6 +111,41 @@ def fetch_trending_movies():
     except:
         return pd.DataFrame()
 
+# ---------------- FETCH GENRES FOR NEW MOVIE ----------------
+@st.cache_data(ttl=3600)
+def fetch_movie_genres(movie_name):
+    try:
+        search_url = f"https://api.themoviedb.org/3/search/movie?api_key={api_key}&query={movie_name}"
+        search_res = requests.get(search_url, timeout=5).json()
+
+        if not search_res.get("results"):
+            return None, None
+
+        movie = search_res["results"][0]
+        movie_id = movie["id"]
+
+        details = requests.get(
+            f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={api_key}"
+        ).json()
+
+        genres = [g["name"] for g in details.get("genres", [])]
+
+        return movie_id, genres
+
+    except:
+        return None, None
+
+# ---------------- GENRE BASED FALLBACK ----------------
+def genre_based_recommendation(genres, top_n=18):
+    if not genres:
+        return pd.DataFrame()
+
+    filtered = df[df["genres_parsed"].apply(
+        lambda g_list: any(g in g_list for g in genres)
+    )]
+
+    return filtered.sort_values("popularity", ascending=False).head(top_n)
+
 # ---------------- RECOMMENDER ----------------
 def recommend(title_query, top_n=10):
     matches = df[df["original_title"].str.lower().str.contains(title_query.lower())]
@@ -185,17 +220,35 @@ with tabs[0]:
     popular = df.sort_values("popularity", ascending=False).head(18)
     movie_grid(popular, section_name="home")
 
-# SEARCH
+# SEARCH (ML + Fallback)
 with tabs[1]:
     movie_input = st.text_input("Search Movie")
+
     if st.button("Search"):
         seed, recs = recommend(movie_input, top_n=18)
+
         if seed is not None:
             st.session_state.selected_movie = seed["id"]
             show_hero(seed["id"])
-            movie_grid(recs, section_name="search")
+            movie_grid(recs, section_name="search_ml")
+
         else:
-            st.error("Movie not found")
+            movie_id, genres = fetch_movie_genres(movie_input)
+
+            if movie_id:
+                st.session_state.selected_movie = movie_id
+                show_hero(movie_id)
+
+                st.subheader("🎯 Genre-Based Recommendations")
+
+                genre_recs = genre_based_recommendation(genres)
+
+                if not genre_recs.empty:
+                    movie_grid(genre_recs, section_name="search_genre")
+                else:
+                    st.info("No similar movies found in dataset.")
+            else:
+                st.error("Movie not found anywhere.")
 
 # TRENDING (LIVE)
 with tabs[2]:
