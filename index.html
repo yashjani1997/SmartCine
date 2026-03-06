@@ -1,233 +1,813 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>SmartCine | Hybrid ML Recommender</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SmartCine — Hybrid Movie Recommendation System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #05060a;
+      --bg2: #090a10;
+      --panel: #0c0e18;
+      --border: #1c1f35;
+      --gold: #f5c518;
+      --gold2: #e8a000;
+      --cyan: #00d4ff;
+      --purple: #9b5de5;
+      --red: #e63946;
+      --text: #d0cfe8;
+      --muted: #3a3a5c;
+      --mono: 'Share Tech Mono', monospace;
+      --display: 'Bebas Neue', cursive;
+      --orb: 'Orbitron', sans-serif;
+      --body: 'Rajdhani', sans-serif;
+    }
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap" rel="stylesheet">
-<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
 
-<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--body);
+      font-size: 16px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
 
-<style>
-* { margin:0; padding:0; box-sizing:border-box; font-family:'Inter', sans-serif; }
+    /* Film grain */
+    body::before {
+      content:'';
+      position:fixed; inset:0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events:none; z-index:9999; opacity:0.4;
+    }
 
-body {
-    background: radial-gradient(circle at top left,#1e293b,#0f172a);
-    color:white;
-    overflow-x:hidden;
-}
+    /* Scanlines */
+    body::after {
+      content:'';
+      position:fixed; inset:0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(245,197,24,0.008) 3px, rgba(245,197,24,0.008) 4px);
+      pointer-events:none; z-index:9998;
+    }
 
-/* Particles */
-#particles-js {
-    position:fixed;
-    width:100%;
-    height:100%;
-    z-index:-1;
-}
+    /* ── NAV ── */
+    nav {
+      position:fixed; top:0; left:0; right:0; z-index:100;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:18px 52px;
+      background:rgba(5,6,10,0.9);
+      backdrop-filter:blur(16px);
+      border-bottom:1px solid rgba(245,197,24,0.1);
+    }
 
-/* HERO SECTION */
-.hero {
-    height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    text-align:center;
-    position:relative;
-}
+    .nav-logo {
+      font-family:var(--display);
+      font-size:22px;
+      letter-spacing:4px;
+      color:var(--gold);
+      text-shadow:0 0 20px rgba(245,197,24,0.4);
+    }
 
-.glass-card {
-    background: rgba(255,255,255,0.06);
-    backdrop-filter: blur(18px);
-    padding:60px;
-    border-radius:25px;
-    box-shadow: 0 0 60px rgba(99,102,241,0.4);
-    max-width:750px;
-}
+    .nav-logo span { color:var(--muted); font-size:14px; font-family:var(--mono); letter-spacing:2px; }
 
-.glass-card h1 {
-    font-size:70px;
-    font-weight:900;
-    background: linear-gradient(to right,#f43f5e,#6366f1);
-    -webkit-background-clip:text;
-    color:transparent;
-}
+    .nav-links { display:flex; gap:32px; list-style:none; }
+    .nav-links a {
+      font-family:var(--mono); font-size:11px; color:var(--muted);
+      text-decoration:none; letter-spacing:0.12em; text-transform:uppercase;
+      transition:color 0.2s;
+    }
+    .nav-links a:hover { color:var(--gold); }
 
-.glass-card p {
-    margin-top:20px;
-    font-size:20px;
-    color:#cbd5e1;
-}
+    .nav-cta {
+      font-family:var(--mono); font-size:11px;
+      padding:8px 20px;
+      background:var(--gold); color:var(--bg);
+      text-decoration:none; letter-spacing:0.1em; font-weight:700;
+      transition:opacity 0.2s;
+      clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));
+    }
+    .nav-cta:hover { opacity:0.85; }
 
-.btn {
-    margin-top:35px;
-    padding:16px 40px;
-    border-radius:40px;
-    border:none;
-    font-weight:700;
-    cursor:pointer;
-    background: linear-gradient(to right,#6366f1,#f43f5e);
-    color:white;
-    transition:0.4s;
-    box-shadow: 0 0 25px rgba(244,63,94,0.6);
-    font-size:16px;
-}
+    /* ── HERO ── */
+    .hero {
+      position:relative; z-index:1;
+      min-height:100vh;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      padding:120px 52px 80px;
+      text-align:center;
+      overflow:hidden;
+    }
 
-.btn:hover {
-    transform:scale(1.1);
-    box-shadow: 0 0 50px rgba(99,102,241,0.9);
-}
+    /* Film strip top */
+    .filmstrip {
+      position:absolute; top:0; left:0; right:0;
+      height:60px;
+      background: repeating-linear-gradient(90deg, var(--bg) 0px, var(--bg) 40px, var(--border) 40px, var(--border) 42px, var(--bg) 42px, var(--bg) 82px);
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:center; padding:0 20px; gap:0;
+      overflow:hidden;
+    }
 
-/* Section */
-.section {
-    padding:100px 10%;
-}
+    .film-hole {
+      width:28px; height:20px;
+      border:2px solid var(--border);
+      border-radius:3px;
+      margin-right:14px;
+      flex-shrink:0;
+    }
 
-.section h2 {
-    font-size:36px;
-    margin-bottom:40px;
-}
+    .hero-eyebrow {
+      font-family:var(--mono); font-size:11px;
+      color:var(--gold); letter-spacing:0.25em;
+      text-transform:uppercase; margin-bottom:20px;
+      opacity:0; animation:fadeUp 0.6s 0.2s forwards;
+    }
 
-/* Glass Card */
-.card {
-    background:rgba(255,255,255,0.05);
-    backdrop-filter:blur(12px);
-    padding:30px;
-    border-radius:20px;
-    margin-bottom:25px;
-    transition:0.4s;
-}
-.card:hover { transform:translateY(-10px); }
+    .hero h1 {
+      font-family:var(--display);
+      font-size:clamp(64px,14vw,160px);
+      line-height:0.9; letter-spacing:8px;
+      color:#fff; margin-bottom:4px;
+      opacity:0; animation:fadeUp 0.7s 0.35s forwards;
+      text-shadow:0 0 60px rgba(245,197,24,0.15);
+    }
 
-.grid {
-    display:grid;
-    grid-template-columns: repeat(auto-fit,minmax(280px,1fr));
-    gap:25px;
-}
+    .hero h1 .smart { color:var(--gold); text-shadow:0 0 40px rgba(245,197,24,0.5); }
+    .hero h1 .cine { -webkit-text-stroke:1px rgba(255,255,255,0.3); color:transparent; }
 
-.pipeline svg {
-    width:100%;
-    height:200px;
-}
+    .hero-tagline {
+      font-family:var(--mono); font-size:13px;
+      color:var(--muted); letter-spacing:0.15em;
+      margin-bottom:32px;
+      opacity:0; animation:fadeUp 0.7s 0.5s forwards;
+    }
 
-.footer {
-    text-align:center;
-    padding:40px;
-    background:#000;
-    color:#94a3b8;
-}
+    .hero-desc {
+      max-width:600px; font-size:18px;
+      color:var(--text); margin-bottom:48px;
+      font-weight:400; line-height:1.7;
+      opacity:0; animation:fadeUp 0.7s 0.6s forwards;
+    }
 
-@media(max-width:768px){
-    .glass-card h1 { font-size:45px; }
-}
-</style>
+    .hero-btns {
+      display:flex; gap:16px; justify-content:center; flex-wrap:wrap;
+      opacity:0; animation:fadeUp 0.7s 0.75s forwards;
+    }
+
+    .btn-gold {
+      font-family:var(--mono); font-size:13px;
+      padding:14px 36px; background:var(--gold); color:var(--bg);
+      text-decoration:none; letter-spacing:0.1em; font-weight:700;
+      transition:all 0.2s;
+      clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));
+    }
+    .btn-gold:hover { box-shadow:0 0 30px rgba(245,197,24,0.4); transform:translateY(-2px); }
+
+    .btn-outline {
+      font-family:var(--mono); font-size:13px;
+      padding:14px 36px; border:1px solid var(--border);
+      color:var(--text); text-decoration:none; letter-spacing:0.1em;
+      transition:all 0.2s;
+    }
+    .btn-outline:hover { border-color:var(--gold); color:var(--gold); }
+
+    /* Stars rating */
+    .hero-rating {
+      display:flex; align-items:center; gap:8px;
+      justify-content:center; margin-top:32px;
+      opacity:0; animation:fadeUp 0.7s 0.85s forwards;
+    }
+
+    .stars { color:var(--gold); font-size:20px; letter-spacing:4px; }
+    .rating-text { font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:0.1em; }
+
+    /* Stats */
+    .hero-stats {
+      display:flex; gap:0; margin-top:60px;
+      border:1px solid var(--border);
+      opacity:0; animation:fadeUp 0.7s 0.95s forwards;
+    }
+
+    .stat {
+      padding:20px 36px; border-right:1px solid var(--border);
+      text-align:center;
+    }
+    .stat:last-child { border-right:none; }
+
+    .stat-val {
+      font-family:var(--display);
+      font-size:36px; color:var(--gold);
+      text-shadow:0 0 15px rgba(245,197,24,0.3);
+      letter-spacing:2px;
+    }
+
+    .stat-label {
+      font-family:var(--mono); font-size:10px;
+      color:var(--muted); letter-spacing:0.15em;
+      text-transform:uppercase; margin-top:4px;
+    }
+
+    /* ── SECTIONS ── */
+    section {
+      position:relative; z-index:1;
+      padding:100px 52px;
+      max-width:1200px; margin:0 auto;
+    }
+
+    .sec-tag {
+      font-family:var(--mono); font-size:11px;
+      color:var(--muted); letter-spacing:0.2em;
+      text-transform:uppercase; margin-bottom:10px;
+    }
+
+    .sec-tag .num { color:var(--gold); }
+
+    .sec-title {
+      font-family:var(--display);
+      font-size:clamp(28px,5vw,52px);
+      letter-spacing:3px; color:#fff;
+      margin-bottom:48px;
+    }
+
+    hr.div {
+      border:none; border-top:1px solid var(--border);
+      max-width:1200px; margin:0 auto;
+    }
+
+    /* ── VERSIONS ── */
+    .version-list { display:flex; flex-direction:column; gap:2px; }
+
+    .version-card {
+      background:var(--panel);
+      border:1px solid var(--border);
+      padding:36px 40px;
+      display:grid;
+      grid-template-columns:120px 1fr auto;
+      gap:40px; align-items:start;
+      transition:all 0.3s;
+      position:relative; overflow:hidden;
+      cursor:default;
+    }
+
+    .version-card::before {
+      content:'';
+      position:absolute; left:0; top:0; bottom:0;
+      width:3px;
+    }
+
+    .version-card.v1::before { background:var(--cyan); }
+    .version-card.v2::before { background:var(--purple); }
+    .version-card.v3::before { background:var(--gold); }
+
+    .version-card:hover {
+      border-color:var(--gold);
+      background:rgba(245,197,24,0.03);
+      transform:translateX(4px);
+    }
+
+    .v-num {
+      font-family:var(--display);
+      font-size:56px; line-height:1;
+      letter-spacing:2px;
+    }
+
+    .version-card.v1 .v-num { color:var(--cyan); text-shadow:0 0 20px rgba(0,212,255,0.3); }
+    .version-card.v2 .v-num { color:var(--purple); text-shadow:0 0 20px rgba(155,93,229,0.3); }
+    .version-card.v3 .v-num { color:var(--gold); text-shadow:0 0 20px rgba(245,197,24,0.3); }
+
+    .v-sub {
+      font-family:var(--mono); font-size:10px;
+      letter-spacing:0.15em; text-transform:uppercase;
+      margin-top:4px;
+    }
+    .version-card.v1 .v-sub { color:var(--cyan); }
+    .version-card.v2 .v-sub { color:var(--purple); }
+    .version-card.v3 .v-sub { color:var(--gold); }
+
+    .v-title {
+      font-family:var(--orb); font-size:14px;
+      font-weight:700; color:#fff; margin-bottom:8px;
+      letter-spacing:0.05em;
+    }
+
+    .v-focus {
+      font-family:var(--mono); font-size:11px;
+      color:var(--muted); letter-spacing:0.1em;
+      margin-bottom:16px; text-transform:uppercase;
+    }
+
+    .v-features {
+      list-style:none; display:flex; flex-direction:column; gap:6px;
+    }
+
+    .v-features li {
+      font-size:14px; color:var(--text);
+      padding-left:16px; position:relative;
+    }
+
+    .v-features li::before {
+      content:'→';
+      position:absolute; left:0;
+      font-family:var(--mono); font-size:12px;
+    }
+
+    .version-card.v1 .v-features li::before { color:var(--cyan); }
+    .version-card.v2 .v-features li::before { color:var(--purple); }
+    .version-card.v3 .v-features li::before { color:var(--gold); }
+
+    .v-badge {
+      font-family:var(--mono); font-size:10px;
+      padding:6px 14px; letter-spacing:0.1em;
+      white-space:nowrap; align-self:start;
+    }
+
+    .badge-cyan { background:rgba(0,212,255,0.1); color:var(--cyan); border:1px solid rgba(0,212,255,0.2); }
+    .badge-purple { background:rgba(155,93,229,0.1); color:var(--purple); border:1px solid rgba(155,93,229,0.2); }
+    .badge-gold { background:rgba(245,197,24,0.1); color:var(--gold); border:1px solid rgba(245,197,24,0.2); }
+
+    /* ── API TABLE ── */
+    .api-table {
+      width:100%; border-collapse:collapse;
+      font-family:var(--mono); font-size:13px;
+    }
+
+    .api-table th {
+      text-align:left; padding:14px 20px;
+      font-size:10px; letter-spacing:0.15em;
+      text-transform:uppercase; color:var(--muted);
+      border-bottom:1px solid var(--border);
+    }
+
+    .api-table td {
+      padding:14px 20px;
+      border-bottom:1px solid rgba(28,31,53,0.6);
+    }
+
+    .api-table tr:hover td { background:rgba(245,197,24,0.02); }
+
+    .api-endpoint { color:var(--gold); }
+    .api-purpose { color:var(--text); font-size:14px; font-family:var(--body); }
+
+    /* ── TECH STACK ── */
+    .stack-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill, minmax(180px,1fr));
+      gap:16px;
+    }
+
+    .stack-card {
+      background:var(--panel);
+      border:1px solid var(--border);
+      padding:22px; display:flex;
+      align-items:center; gap:14px;
+      transition:all 0.3s;
+    }
+
+    .stack-card:hover {
+      border-color:var(--gold);
+      background:rgba(245,197,24,0.03);
+    }
+
+    .stack-icon { font-size:26px; }
+
+    .stack-name {
+      font-family:var(--mono); font-size:12px;
+      color:var(--gold); letter-spacing:0.05em;
+    }
+
+    .stack-cat {
+      font-family:var(--mono); font-size:10px;
+      color:var(--muted); letter-spacing:0.08em;
+      text-transform:uppercase; margin-top:2px;
+    }
+
+    /* ── HYBRID FLOW ── */
+    .hybrid-grid {
+      display:grid; grid-template-columns:1fr 1fr; gap:24px;
+    }
+
+    .hybrid-box {
+      background:var(--panel); border:1px solid var(--border);
+      padding:32px; position:relative; overflow:hidden;
+      transition:all 0.3s;
+    }
+
+    .hybrid-box::after {
+      content:'';
+      position:absolute; top:0; left:0; right:0; height:2px;
+    }
+
+    .hybrid-box.ml::after { background:linear-gradient(90deg, var(--cyan), var(--purple)); }
+    .hybrid-box.api::after { background:linear-gradient(90deg, var(--gold), var(--gold2)); }
+
+    .hybrid-box:hover { transform:translateY(-3px); border-color:var(--gold); }
+
+    .hybrid-label {
+      font-family:var(--mono); font-size:11px;
+      letter-spacing:0.15em; text-transform:uppercase;
+      margin-bottom:12px;
+    }
+
+    .hybrid-box.ml .hybrid-label { color:var(--cyan); }
+    .hybrid-box.api .hybrid-label { color:var(--gold); }
+
+    .hybrid-title {
+      font-family:var(--orb); font-size:15px;
+      font-weight:700; color:#fff; margin-bottom:12px;
+    }
+
+    .hybrid-box p {
+      font-size:15px; color:var(--text); line-height:1.65;
+    }
+
+    /* ── DEMO ── */
+    .demo-wrap {
+      background:var(--panel);
+      border:1px solid var(--border);
+      padding:72px 52px;
+      text-align:center;
+      position:relative; overflow:hidden;
+    }
+
+    .demo-wrap::before {
+      content:'';
+      position:absolute; inset:0;
+      background:radial-gradient(ellipse at center, rgba(245,197,24,0.05) 0%, transparent 70%);
+    }
+
+    /* Film strip decorations */
+    .demo-wrap::after {
+      content:'';
+      position:absolute; bottom:0; left:0; right:0;
+      height:40px;
+      background:repeating-linear-gradient(90deg, var(--bg) 0px, var(--bg) 30px, var(--border) 30px, var(--border) 32px, var(--bg) 32px, var(--bg) 62px);
+      border-top:1px solid var(--border);
+    }
+
+    .demo-eyebrow {
+      font-family:var(--mono); font-size:11px;
+      color:var(--muted); letter-spacing:0.2em;
+      text-transform:uppercase; margin-bottom:16px;
+    }
+
+    .demo-title {
+      font-family:var(--display);
+      font-size:42px; letter-spacing:4px;
+      color:#fff; margin-bottom:16px;
+    }
+
+    .demo-desc {
+      font-size:16px; color:var(--muted);
+      max-width:480px; margin:0 auto 36px;
+      line-height:1.65;
+    }
+
+    .demo-btns {
+      display:flex; gap:16px; justify-content:center; flex-wrap:wrap;
+      position:relative; z-index:1;
+    }
+
+    /* ── HIGHLIGHTS ── */
+    .highlights {
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+      gap:16px;
+    }
+
+    .hl-item {
+      background:var(--panel); border:1px solid var(--border);
+      border-left:3px solid var(--gold);
+      padding:20px 24px; font-size:15px; color:var(--text);
+      transition:all 0.3s;
+    }
+
+    .hl-item:hover { border-color:var(--gold); background:rgba(245,197,24,0.03); }
+    .hl-item::before { content:'✅ '; }
+
+    /* ── FOOTER ── */
+    footer {
+      position:relative; z-index:1;
+      border-top:1px solid var(--border);
+      padding:48px 52px;
+      display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:24px;
+    }
+
+    .footer-logo {
+      font-family:var(--display);
+      font-size:20px; letter-spacing:4px;
+      color:var(--gold);
+    }
+
+    .footer-links { display:flex; gap:28px; }
+    .footer-links a {
+      font-family:var(--mono); font-size:11px;
+      color:var(--muted); text-decoration:none;
+      letter-spacing:0.1em; transition:color 0.2s;
+    }
+    .footer-links a:hover { color:var(--gold); }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(24px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    .reveal {
+      opacity:0; transform:translateY(20px);
+      transition:opacity 0.6s, transform 0.6s;
+    }
+
+    .reveal.visible { opacity:1; transform:none; }
+
+    .reveal-d1 { transition-delay:0.1s; }
+    .reveal-d2 { transition-delay:0.2s; }
+    .reveal-d3 { transition-delay:0.3s; }
+
+    @media (max-width:768px) {
+      nav { padding:14px 24px; }
+      .nav-links { display:none; }
+      section { padding:64px 24px; }
+      .version-card { grid-template-columns:80px 1fr; }
+      .version-card .v-badge { display:none; }
+      .hybrid-grid { grid-template-columns:1fr; }
+      footer { padding:32px 24px; flex-direction:column; }
+    }
+  </style>
 </head>
-
 <body>
 
-<div id="particles-js"></div>
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">SMART<span>CINE</span></div>
+  <ul class="nav-links">
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#versions">Versions</a></li>
+    <li><a href="#hybrid">Hybrid Logic</a></li>
+    <li><a href="#demo">Demo</a></li>
+    <li><a href="https://github.com/yashjani1997/SmartCine" target="_blank">GitHub</a></li>
+  </ul>
+  <a href="https://smartcine-yflwioje8c2ggv8lqzemqu.streamlit.app/" class="nav-cta" target="_blank">▶ LIVE APP</a>
+</nav>
 
 <!-- HERO -->
-<div class="hero">
-    <div class="glass-card" data-aos="zoom-in">
-        <h1>🎬 SmartCine</h1>
-        <p>
-            Hybrid Movie Recommendation Engine using Clustering,
-            SVD & Cosine Similarity
-        </p>
-        <button class="btn"
-            onclick="document.getElementById('about').scrollIntoView({behavior:'smooth'})">
-            🚀 Explore Project
-        </button>
+<div class="hero" id="overview">
+  <div class="filmstrip">
+    <div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div>
+    <div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div>
+    <div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div>
+    <div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div>
+    <div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div>
+    <div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div>
+  </div>
+
+  <p class="hero-eyebrow">Machine Learning · Recommendation System · TMDB API</p>
+  <h1><span class="smart">SMART</span><span class="cine">CINE</span></h1>
+  <p class="hero-tagline">// Hybrid Movie Recommendation System — V1 → V2 → V3</p>
+  <p class="hero-desc">
+    A version-wise evolved movie recommendation engine combining Cosine Similarity, KMeans Clustering, SVD, and live TMDB API data — from core ML baseline to full movie discovery platform.
+  </p>
+  <div class="hero-btns">
+    <a href="https://smartcine-yflwioje8c2ggv8lqzemqu.streamlit.app/" class="btn-gold" target="_blank">▶ Live App</a>
+    <a href="https://github.com/yashjani1997/SmartCine" class="btn-outline" target="_blank">View Source</a>
+  </div>
+  <div class="hero-rating">
+    <span class="stars">★★★★★</span>
+    <span class="rating-text">TMDB 5000 Dataset · Live Deployed</span>
+  </div>
+  <div class="hero-stats">
+    <div class="stat">
+      <div class="stat-val">3</div>
+      <div class="stat-label">Versions</div>
     </div>
-</div>
-
-<!-- ABOUT -->
-<div class="section" id="about">
-    <h2 data-aos="fade-right">📌 Project Overview</h2>
-    <div class="card" data-aos="fade-up">
-        SmartCine is a hybrid content-based movie recommender designed to deliver
-        context-aware, semantically meaningful movie suggestions using advanced ML strategies.
+    <div class="stat">
+      <div class="stat-val">5000+</div>
+      <div class="stat-label">Movies</div>
     </div>
-</div>
-
-<!-- ML STRATEGY -->
-<div class="section">
-    <h2 data-aos="fade-right">🧠 ML Strategy</h2>
-    <div class="grid">
-        <div class="card" data-aos="zoom-in">TF-IDF Feature Engineering</div>
-        <div class="card" data-aos="zoom-in" data-aos-delay="100">Truncated SVD</div>
-        <div class="card" data-aos="zoom-in" data-aos-delay="200">KMeans Clustering</div>
-        <div class="card" data-aos="zoom-in" data-aos-delay="300">Cosine Similarity Ranking</div>
+    <div class="stat">
+      <div class="stat-val">4</div>
+      <div class="stat-label">TMDB APIs</div>
     </div>
-</div>
-
-<!-- SYSTEM ARCHITECTURE -->
-<div class="section">
-    <h2 data-aos="fade-right">📊 System Architecture</h2>
-    <div class="card" data-aos="fade-up">
-        <div class="pipeline">
-            <svg viewBox="0 0 800 200">
-                <line x1="50" y1="100" x2="750" y2="100" stroke="#6366f1" stroke-width="4"/>
-                <circle cx="100" cy="100" r="20" fill="#f43f5e"/>
-                <circle cx="250" cy="100" r="20" fill="#6366f1"/>
-                <circle cx="400" cy="100" r="20" fill="#f43f5e"/>
-                <circle cx="550" cy="100" r="20" fill="#6366f1"/>
-                <circle cx="700" cy="100" r="20" fill="#f43f5e"/>
-                <text x="60" y="150">Dataset</text>
-                <text x="200" y="150">TF-IDF</text>
-                <text x="350" y="150">SVD</text>
-                <text x="500" y="150">KMeans</text>
-                <text x="650" y="150">Hybrid Rank</text>
-            </svg>
-        </div>
+    <div class="stat">
+      <div class="stat-val">LIVE</div>
+      <div class="stat-label">Deployed</div>
     </div>
+  </div>
 </div>
 
-<!-- LIVE DEMO -->
-<div class="section">
-    <h2 data-aos="fade-right">🎬 Live Application</h2>
-    <div class="card" data-aos="fade-up" style="text-align:center;">
-        <p style="margin-bottom:20px; color:#cbd5e1;">
-            Experience SmartCine in action.
-        </p>
+<hr class="div"/>
 
-        <a href="https://smartcine-yflwioje8c2ggv8lqzemqu.streamlit.app/" target="_blank">
-            <button class="btn">🚀 Launch Live Demo</button>
-        </a>
+<!-- VERSIONS -->
+<section id="versions">
+  <div class="sec-tag"><span class="num">// 01 —</span> Evolution</div>
+  <h2 class="sec-title">VERSION BREAKDOWN</h2>
 
-        <p style="margin-top:20px; font-size:14px; color:#94a3b8;">
-            Tech Stack: Python · Scikit-Learn · TF-IDF · SVD · KMeans · Cosine Similarity · Streamlit · TMDB API
-        </p>
+  <div class="version-list">
+    <div class="version-card v1 reveal">
+      <div>
+        <div class="v-num">V1</div>
+        <div class="v-sub">Baseline</div>
+      </div>
+      <div>
+        <div class="v-title">Core Recommendation Engine</div>
+        <div class="v-focus">Focus: ML Logic & Accuracy</div>
+        <ul class="v-features">
+          <li>Feature engineering on rich movie metadata</li>
+          <li>Text vectorization + Cosine Similarity on TMDB 5000</li>
+          <li>Content-based recommendations from trained dataset</li>
+        </ul>
+      </div>
+      <span class="v-badge badge-cyan">COMPLETE</span>
     </div>
-</div>
 
-<div class="footer">
-Built with ❤️ — SmartCine ML Portfolio
-</div>
+    <div class="version-card v2 reveal reveal-d1">
+      <div>
+        <div class="v-num">V2</div>
+        <div class="v-sub">Enhanced</div>
+      </div>
+      <div>
+        <div class="v-title">Smarter Logic & Flexibility</div>
+        <div class="v-focus">Focus: Performance & Optimization</div>
+        <ul class="v-features">
+          <li>SVD — dimensionality reduction for faster computation</li>
+          <li>KMeans Clustering to reduce search space</li>
+          <li>Weighted hybrid scoring (cluster + similarity)</li>
+          <li>Movie, Genre, Actor & Director recommendation paths</li>
+        </ul>
+      </div>
+      <span class="v-badge badge-purple">COMPLETE</span>
+    </div>
+
+    <div class="version-card v3 reveal reveal-d2">
+      <div>
+        <div class="v-num">V3</div>
+        <div class="v-sub">Live</div>
+      </div>
+      <div>
+        <div class="v-title">Full Movie Discovery Platform</div>
+        <div class="v-focus">Focus: Product-Level & Scalable</div>
+        <ul class="v-features">
+          <li>Advanced Streamlit UI — Home, Search, Trending tabs</li>
+          <li>TMDB API: live posters, trailers, trending, real-time search</li>
+          <li>Hybrid: ML model for dataset + API fallback for new movies</li>
+          <li>Interactive Plotly visualizations</li>
+          <li>Live deployed on Streamlit Cloud</li>
+        </ul>
+      </div>
+      <span class="v-badge badge-gold">🔴 LIVE</span>
+    </div>
+  </div>
+</section>
+
+<hr class="div"/>
+
+<!-- HYBRID LOGIC -->
+<section id="hybrid">
+  <div class="sec-tag"><span class="num">// 02 —</span> Intelligence</div>
+  <h2 class="sec-title">HYBRID SEARCH LOGIC</h2>
+
+  <div class="hybrid-grid reveal">
+    <div class="hybrid-box ml">
+      <div class="hybrid-label">🧠 Dataset Movies</div>
+      <div class="hybrid-title">ML-Based Cosine Similarity</div>
+      <p>For movies in the TMDB 5000 dataset, the trained model extracts feature vectors and computes cosine similarity to return the most semantically similar movies.</p>
+    </div>
+    <div class="hybrid-box api">
+      <div class="hybrid-label">🌐 New / Unseen Movies</div>
+      <div class="hybrid-title">TMDB API + Genre Fallback</div>
+      <p>For new or unseen movies not in the training set, SmartCine queries the TMDB API in real-time and falls back to genre-based recommendations — solving the cold-start problem.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="div"/>
+
+<!-- API ENDPOINTS -->
+<section>
+  <div class="sec-tag"><span class="num">// 03 —</span> Integration</div>
+  <h2 class="sec-title">TMDB API ENDPOINTS</h2>
+
+  <table class="api-table reveal">
+    <thead>
+      <tr>
+        <th>Endpoint</th>
+        <th>Purpose</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="api-endpoint">/movie/{id}</td>
+        <td class="api-purpose">Fetch movie details, poster, backdrop, ratings, overview</td>
+      </tr>
+      <tr>
+        <td class="api-endpoint">/movie/{id}/videos</td>
+        <td class="api-purpose">Fetch YouTube trailer link for the movie</td>
+      </tr>
+      <tr>
+        <td class="api-endpoint">/trending/movie/week</td>
+        <td class="api-purpose">Live trending movies updated weekly</td>
+      </tr>
+      <tr>
+        <td class="api-endpoint">/search/movie?query=</td>
+        <td class="api-purpose">Real-time search for any new or unseen movie</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<hr class="div"/>
+
+<!-- TECH STACK -->
+<section>
+  <div class="sec-tag"><span class="num">// 04 —</span> Stack</div>
+  <h2 class="sec-title">TECH STACK</h2>
+
+  <div class="stack-grid reveal">
+    <div class="stack-card">
+      <span class="stack-icon">🐍</span>
+      <div><div class="stack-name">Python</div><div class="stack-cat">Core Language</div></div>
+    </div>
+    <div class="stack-card">
+      <span class="stack-icon">🔬</span>
+      <div><div class="stack-name">Scikit-learn</div><div class="stack-cat">ML & Clustering</div></div>
+    </div>
+    <div class="stack-card">
+      <span class="stack-icon">🎯</span>
+      <div><div class="stack-name">Cosine Similarity</div><div class="stack-cat">Recommendation</div></div>
+    </div>
+    <div class="stack-card">
+      <span class="stack-icon">📐</span>
+      <div><div class="stack-name">SVD + KMeans</div><div class="stack-cat">Optimization</div></div>
+    </div>
+    <div class="stack-card">
+      <span class="stack-icon">🎬</span>
+      <div><div class="stack-name">TMDB API</div><div class="stack-cat">Live Data</div></div>
+    </div>
+    <div class="stack-card">
+      <span class="stack-icon">🖥️</span>
+      <div><div class="stack-name">Streamlit</div><div class="stack-cat">UI & Deployment</div></div>
+    </div>
+    <div class="stack-card">
+      <span class="stack-icon">📊</span>
+      <div><div class="stack-name">Plotly</div><div class="stack-cat">Visualization</div></div>
+    </div>
+    <div class="stack-card">
+      <span class="stack-icon">🐼</span>
+      <div><div class="stack-name">Pandas / NumPy</div><div class="stack-cat">Data Processing</div></div>
+    </div>
+  </div>
+</section>
+
+<hr class="div"/>
+
+<!-- HIGHLIGHTS -->
+<section>
+  <div class="sec-tag"><span class="num">// 05 —</span> Highlights</div>
+  <h2 class="sec-title">PROJECT HIGHLIGHTS</h2>
+
+  <div class="highlights reveal">
+    <div class="hl-item">Trained on TMDB 5000 dataset — V1 cosine similarity baseline</div>
+    <div class="hl-item">SVD + KMeans optimization — V2 performance upgrade</div>
+    <div class="hl-item">Full TMDB API — live posters, trailers, trending & search</div>
+    <div class="hl-item">Hybrid search — ML model + API fallback for new movies</div>
+    <div class="hl-item">Cold-start problem solved via TMDB API genre fallback</div>
+    <div class="hl-item">Live deployed on Streamlit Cloud — production ready</div>
+  </div>
+</section>
+
+<hr class="div"/>
+
+<!-- DEMO -->
+<section id="demo">
+  <div class="sec-tag"><span class="num">// 06 —</span> Demo</div>
+  <h2 class="sec-title">LIVE DEMO</h2>
+  <div class="demo-wrap reveal">
+    <p class="demo-eyebrow">// Hybrid ML + TMDB API — Real-time movie discovery platform</p>
+    <h3 class="demo-title">TRY SMARTCINE</h3>
+    <p class="demo-desc">Search any movie — dataset or brand new — and get instant intelligent recommendations with live posters and trailers.</p>
+    <div class="demo-btns">
+      <a href="https://smartcine-yflwioje8c2ggv8lqzemqu.streamlit.app/" class="btn-gold" target="_blank">▶ OPEN LIVE APP</a>
+      <a href="https://github.com/yashjani1997/SmartCine" class="btn-outline" target="_blank">VIEW SOURCE</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">SMARTCINE</div>
+  <div class="footer-links">
+    <a href="https://github.com/yashjani1997/SmartCine" target="_blank">GitHub</a>
+    <a href="https://github.com/yashjani1997" target="_blank">Portfolio</a>
+  </div>
+</footer>
 
 <script>
-AOS.init();
-
-window.onload = function() {
-  particlesJS("particles-js", {
-    particles: {
-      number: { value: 70 },
-      size: { value: 3 },
-      color: { value: "#6366f1" },
-      line_linked: {
-        enable: true,
-        distance: 150,
-        color: "#f43f5e",
-        opacity: 0.4,
-        width: 1
-      }
-    }
-  });
-};
+  const reveals = document.querySelectorAll('.reveal');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  reveals.forEach(r => obs.observe(r));
 </script>
-
 </body>
 </html>
