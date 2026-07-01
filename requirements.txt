@@ -6,4 +6,4 @@ requests==2.31.0
 mlxtend==0.23.0
 matplotlib==3.9.2
 plotly==5.22.0
-
+google-generativeai
