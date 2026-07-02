@@ -422,7 +422,7 @@ def show_hero(movie_id):
     if not movie:
         return
     if movie["backdrop"]:
-        st.image(movie["backdrop"], use_container_width=True)
+        st.image(movie["backdrop"], width='stretch')
     st.markdown(f"<div class='hero-title'>{movie['title']}</div>", unsafe_allow_html=True)
     st.markdown(f"<div class='hero-overview'>{movie['overview']}</div>", unsafe_allow_html=True)
     st.markdown(f"⭐ {movie['rating']}")
@@ -443,7 +443,7 @@ def movie_grid(df_rows, section_name="home", cols=5):
             with col:
                 movie = fetch_movie(movie_id)
                 if movie and movie["poster"]:
-                    st.image(movie["poster"], use_container_width=True)
+                    st.image(movie["poster"], width='stretch')
                 st.markdown(
                     f"<div class='movie-title'>{row.original_title}</div>",
                     unsafe_allow_html=True
