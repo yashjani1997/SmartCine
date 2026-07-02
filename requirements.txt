@@ -1,9 +1,8 @@
-streamlit==1.40.0
-scikit-learn==1.5.2
-pandas==2.2.3
-numpy==1.26.4
-requests==2.31.0
-mlxtend==0.23.0
-matplotlib==3.9.2
-plotly==5.22.0
-google-generativeai
+streamlit
+pandas
+numpy
+requests
+scikit-learn==1.7.1
+google-genai
+plotly
+mlxtend
