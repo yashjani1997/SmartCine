@@ -82,7 +82,13 @@ st.markdown("<div class='navbar'>🎬 SmartCine Cinematic</div>", unsafe_allow_h
 if "selected_movie" not in st.session_state:
     st.session_state.selected_movie = None
 if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []   # list of {"role": "user"/"ai", "content": str, "intent": dict}
+    st.session_state.chat_history = []
+if "last_recs" not in st.session_state:
+    st.session_state.last_recs = None
+if "last_seed" not in st.session_state:
+    st.session_state.last_seed = None
+if "last_route_label" not in st.session_state:
+    st.session_state.last_route_label = None
 
 # ---------------- API KEYS ----------------
 api_key = st.secrets["TMDB_API_KEY"]
@@ -544,51 +550,59 @@ with tabs[3]:
     with col_clear:
         if st.button("Clear", use_container_width=True):
             st.session_state.chat_history = []
+            st.session_state.last_recs = None
+            st.session_state.last_seed = None
+            st.session_state.last_route_label = None
             st.rerun()
 
     # --- Handle send ---
     if send and user_query.strip():
-        # 1. Add user message to history
-        st.session_state.chat_history.append({
-            "role": "user",
-            "content": user_query.strip()
-        })
-
-        try:
-            # 2. Parse intent via Gemini
-            with st.spinner("🧠 Thinking..."):
-                intent = parse_intent(user_query.strip(), st.session_state.chat_history)
-
-            # 3. Route to ML engine
-            seed, recs, route_label = route_and_recommend(intent, top_n=12)
-
-            # 4. Build friendly reply
-            ai_reply = build_ai_reply(intent, route_label)
-
-            # 5. Save AI message to history
+        # Prevent duplicate: check last user message
+        last_user = next(
+            (m for m in reversed(st.session_state.chat_history) if m["role"] == "user"), None
+        )
+        if not last_user or last_user["content"] != user_query.strip():
             st.session_state.chat_history.append({
-                "role": "ai",
-                "content": ai_reply,
-                "intent": intent
+                "role": "user",
+                "content": user_query.strip()
             })
 
-            # 6. Show results
-            st.markdown(f"### {route_label}")
+            try:
+                with st.spinner("🧠 Thinking..."):
+                    intent = parse_intent(user_query.strip(), st.session_state.chat_history)
 
-            if seed is not None:
-                st.session_state.selected_movie = seed["id"]
-                show_hero(seed["id"])
+                seed, recs, route_label = route_and_recommend(intent, top_n=12)
+                ai_reply = build_ai_reply(intent, route_label)
 
-            if recs is not None and not recs.empty:
-                movie_grid(recs, section_name="chat_results")
-            else:
-                st.info("No results found. Try rephrasing your request.")
+                st.session_state.chat_history.append({
+                    "role": "ai",
+                    "content": ai_reply,
+                    "intent": intent
+                })
 
-        except json.JSONDecodeError:
-            st.error("Gemini returned unexpected format. Please try again.")
-        except Exception as e:
-            st.error(f"Something went wrong: {str(e)}")
+                # Store results in session_state so they survive rerun
+                st.session_state.last_recs = recs
+                st.session_state.last_seed = seed["id"] if seed is not None else None
+                st.session_state.last_route_label = route_label
+
+                if seed is not None:
+                    st.session_state.selected_movie = seed["id"]
+
+            except json.JSONDecodeError:
+                st.error("Gemini returned unexpected format. Please try again.")
+            except Exception as e:
+                st.error(f"Something went wrong: {str(e)}")
 
         st.rerun()
+
+    # --- Show last results (persists across reruns) ---
+    if st.session_state.last_route_label:
+        st.markdown(f"### {st.session_state.last_route_label}")
+
+    if st.session_state.last_seed:
+        show_hero(st.session_state.last_seed)
+
+    if st.session_state.last_recs is not None and not st.session_state.last_recs.empty:
+        movie_grid(st.session_state.last_recs, section_name="chat_results")
 
 st.markdown("<center>Built with ❤ — SmartCine Cinematic V4</center>", unsafe_allow_html=True)
