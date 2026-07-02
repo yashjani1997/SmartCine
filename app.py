@@ -5,7 +5,8 @@ import numpy as np
 import requests
 import os
 import json
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from sklearn.metrics.pairwise import cosine_similarity
 
 # ---------------- PAGE CONFIG ----------------
@@ -85,7 +86,7 @@ if "chat_history" not in st.session_state:
 
 # ---------------- API KEYS ----------------
 api_key = st.secrets["TMDB_API_KEY"]
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+gemini_client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 TMDB_BASE = "https://api.themoviedb.org/3/movie/"
 IMG_BASE = "https://image.tmdb.org/t/p/w500"
@@ -254,12 +255,14 @@ def parse_intent(user_query: str, chat_history: list) -> dict:
 
     full_prompt = f"{context}New user query: {user_query}"
 
-    model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
-        system_instruction=SYSTEM_PROMPT
+    response = gemini_client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=full_prompt,
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+            temperature=0.1
+        )
     )
-
-    response = model.generate_content(full_prompt)
     raw = response.text.strip()
 
     # Strip markdown fences if Gemini wraps in ```json ... ```
